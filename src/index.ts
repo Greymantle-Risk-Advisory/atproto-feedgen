@@ -7,7 +7,7 @@ function json(body: unknown, status = 200): Response {
 
 function requireAdmin(req: Request, env: Env): Response | null {
   const auth = req.headers.get("authorization") ?? "";
-  if (auth !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "Unauthorized" }, 401);
+  if (!env.ADMIN_TOKEN || auth !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "Unauthorized" }, 401);
   return null;
 }
 
@@ -47,7 +47,7 @@ export default {
 
     if (url.pathname === "/xrpc/app.bsky.feed.getFeedSkeleton") {
       const feed = url.searchParams.get("feed");
-      const limit = Math.min(Number(url.searchParams.get("limit") ?? "50") || 50, 100);
+      const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? "50") || 50, 1), 100);
       const cursor = url.searchParams.get("cursor");
       const before = cursor ? Number(cursor) : undefined;
 
@@ -69,14 +69,27 @@ export default {
     if (url.pathname === "/admin/topics" && request.method === "POST") {
       const denied = requireAdmin(request, env);
       if (denied) return denied;
-      const body = await request.json<{
+      let body: {
         rkey: string;
         displayName: string;
         description?: string;
         keywords: string[];
         excludeKeywords?: string[];
-      }>();
-      if (!body.rkey || !body.displayName || !Array.isArray(body.keywords) || body.keywords.length === 0) {
+      };
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "InvalidRequest", message: "malformed JSON body" }, 400);
+      }
+      if (
+        !body.rkey ||
+        !body.displayName ||
+        !Array.isArray(body.keywords) ||
+        body.keywords.length === 0 ||
+        !body.keywords.every((k) => typeof k === "string" && k.length > 0) ||
+        (body.excludeKeywords !== undefined &&
+          !body.excludeKeywords.every((k) => typeof k === "string" && k.length > 0))
+      ) {
         return json({ error: "InvalidRequest", message: "rkey, displayName, keywords[] required" }, 400);
       }
       await insertTopic(env.DB, {
@@ -94,16 +107,29 @@ export default {
       const denied = requireAdmin(request, env);
       if (denied) return denied;
       const id = url.pathname.split("/").pop()!;
-      const body = await request.json<{ keywords: string[]; excludeKeywords?: string[] }>();
-      if (!Array.isArray(body.keywords) || body.keywords.length === 0) {
+      let body: { keywords: string[]; excludeKeywords?: string[] };
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "InvalidRequest", message: "malformed JSON body" }, 400);
+      }
+      if (
+        !id ||
+        !Array.isArray(body.keywords) ||
+        body.keywords.length === 0 ||
+        !body.keywords.every((k) => typeof k === "string" && k.length > 0) ||
+        (body.excludeKeywords !== undefined &&
+          !body.excludeKeywords.every((k) => typeof k === "string" && k.length > 0))
+      ) {
         return json({ error: "InvalidRequest", message: "keywords[] required" }, 400);
       }
-      await updateTopicKeywords(
+      const updated = await updateTopicKeywords(
         env.DB,
         id,
         body.keywords.map((k) => k.toLowerCase()),
         (body.excludeKeywords ?? []).map((k) => k.toLowerCase()),
       );
+      if (!updated) return json({ error: "NotFound" }, 404);
       return json({ ok: true });
     }
 
@@ -111,7 +137,9 @@ export default {
       const denied = requireAdmin(request, env);
       if (denied) return denied;
       const id = url.pathname.split("/").pop()!;
-      await deleteTopic(env.DB, id);
+      if (!id) return json({ error: "NotFound" }, 404);
+      const deleted = await deleteTopic(env.DB, id);
+      if (!deleted) return json({ error: "NotFound" }, 404);
       return json({ ok: true });
     }
 

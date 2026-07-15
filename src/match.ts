@@ -18,8 +18,10 @@ function keywordRegex(keyword: string): RegExp {
 }
 
 export function matchesTopic(text: string, topic: TopicRule): boolean {
+  // Excludes check the raw text (so a domain like "reddit.com" still matches inside a URL);
+  // includes check URL-stripped text (so short tickers like "/es" can't hide in a URL path).
+  if (topic.excludeKeywords.some((kw) => keywordRegex(kw).test(text))) return false;
   const stripped = text.replace(URL_RE, " ");
-  if (topic.excludeKeywords.some((kw) => keywordRegex(kw).test(stripped))) return false;
   return topic.keywords.some((kw) => keywordRegex(kw).test(stripped));
 }
 

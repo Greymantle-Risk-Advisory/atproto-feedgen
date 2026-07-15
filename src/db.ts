@@ -48,16 +48,18 @@ export async function updateTopicKeywords(
   id: string,
   keywords: string[],
   excludeKeywords: string[],
-): Promise<void> {
-  await db
+): Promise<boolean> {
+  const result = await db
     .prepare("UPDATE topics SET keywords = ?, exclude_keywords = ? WHERE id = ?")
     .bind(JSON.stringify(keywords), JSON.stringify(excludeKeywords), id)
     .run();
+  return result.meta.changes > 0;
 }
 
-export async function deleteTopic(db: D1Database, id: string): Promise<void> {
+export async function deleteTopic(db: D1Database, id: string): Promise<boolean> {
   await db.prepare("DELETE FROM posts WHERE topic_id = ?").bind(id).run();
-  await db.prepare("DELETE FROM topics WHERE id = ?").bind(id).run();
+  const result = await db.prepare("DELETE FROM topics WHERE id = ?").bind(id).run();
+  return result.meta.changes > 0;
 }
 
 export async function insertMatch(db: D1Database, uri: string, topicId: string, indexedAt: number): Promise<void> {

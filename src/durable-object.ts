@@ -22,35 +22,43 @@ interface JetstreamCommitEvent {
 
 export class FirehoseListener extends DurableObject<Env> {
   private socket: WebSocket | null = null;
+  private connecting = false;
   private topics: TopicRule[] = [];
   private topicsLoadedAt = 0;
 
   async alarm(): Promise<void> {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      this.connectJetstream();
-    }
+    this.maybeConnectJetstream();
     await this.pruneAll();
     await this.ctx.storage.setAlarm(Date.now() + ALARM_INTERVAL_MS);
   }
 
   async ensureStarted(): Promise<void> {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      this.connectJetstream();
-    }
+    this.maybeConnectJetstream();
     const existing = await this.ctx.storage.getAlarm();
     if (existing === null) {
       await this.ctx.storage.setAlarm(Date.now() + ALARM_INTERVAL_MS);
     }
   }
 
+  private maybeConnectJetstream(): void {
+    if (this.connecting || (this.socket && this.socket.readyState === WebSocket.OPEN)) return;
+    this.connectJetstream();
+  }
+
   private connectJetstream(): void {
+    this.connecting = true;
     const socket = new WebSocket(JETSTREAM_URL);
+    socket.addEventListener("open", () => {
+      this.connecting = false;
+    });
     socket.addEventListener("message", (event) => this.handleMessage(event));
     socket.addEventListener("close", () => {
       if (this.socket === socket) this.socket = null;
+      this.connecting = false;
     });
     socket.addEventListener("error", () => {
       if (this.socket === socket) this.socket = null;
+      this.connecting = false;
     });
     this.socket = socket;
   }
@@ -68,7 +76,9 @@ export class FirehoseListener extends DurableObject<Env> {
     const commit = parsed.commit;
     if (!commit || commit.operation !== "create" || commit.collection !== "app.bsky.feed.post") return;
     const text = commit.record?.text;
-    if (!text) return;
+    if (!text || text.length > 3000) return;
+    if (typeof parsed.did !== "string" || !parsed.did.startsWith("did:")) return;
+    if (typeof commit.rkey !== "string" || !/^[a-zA-Z0-9._~-]{1,512}$/.test(commit.rkey)) return;
 
     const uri = `at://${parsed.did}/app.bsky.feed.post/${commit.rkey}`;
     const indexedAt = Math.floor(parsed.time_us / 1000);

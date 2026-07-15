@@ -35,6 +35,12 @@ test("matches a real /ES futures mention outside a URL", () => {
   assert.equal(matchesTopic("shorting /ES into the close today", optionsTopic), true);
 });
 
+test("exclude keyword matches a domain inside a URL", () => {
+  const linkTopic = { id: "t", keywords: ["options"], excludeKeywords: ["reddit.com"] };
+  const text = "options talk https://reddit.com/r/options/comments/123";
+  assert.equal(matchesTopic(text, linkTopic), false);
+});
+
 test("word boundary prevents substring match inside another word", () => {
   const noBoundary = { id: "t", keywords: ["iv"], excludeKeywords: [] };
   assert.equal(matchesTopic("my flight has finally arrived", noBoundary), false);
