@@ -43,6 +43,18 @@ export async function insertTopic(
     .run();
 }
 
+export async function updateTopicKeywords(
+  db: D1Database,
+  id: string,
+  keywords: string[],
+  excludeKeywords: string[],
+): Promise<void> {
+  await db
+    .prepare("UPDATE topics SET keywords = ?, exclude_keywords = ? WHERE id = ?")
+    .bind(JSON.stringify(keywords), JSON.stringify(excludeKeywords), id)
+    .run();
+}
+
 export async function deleteTopic(db: D1Database, id: string): Promise<void> {
   await db.prepare("DELETE FROM posts WHERE topic_id = ?").bind(id).run();
   await db.prepare("DELETE FROM topics WHERE id = ?").bind(id).run();

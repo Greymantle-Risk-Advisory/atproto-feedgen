@@ -1,4 +1,4 @@
-import { listTopics, insertTopic, deleteTopic, getSkeleton } from "./db.ts";
+import { listTopics, insertTopic, updateTopicKeywords, deleteTopic, getSkeleton } from "./db.ts";
 export { FirehoseListener } from "./durable-object.ts";
 
 function json(body: unknown, status = 200): Response {
@@ -88,6 +88,23 @@ export default {
         excludeKeywords: (body.excludeKeywords ?? []).map((k) => k.toLowerCase()),
       });
       return json({ ok: true }, 201);
+    }
+
+    if (url.pathname.startsWith("/admin/topics/") && request.method === "PATCH") {
+      const denied = requireAdmin(request, env);
+      if (denied) return denied;
+      const id = url.pathname.split("/").pop()!;
+      const body = await request.json<{ keywords: string[]; excludeKeywords?: string[] }>();
+      if (!Array.isArray(body.keywords) || body.keywords.length === 0) {
+        return json({ error: "InvalidRequest", message: "keywords[] required" }, 400);
+      }
+      await updateTopicKeywords(
+        env.DB,
+        id,
+        body.keywords.map((k) => k.toLowerCase()),
+        (body.excludeKeywords ?? []).map((k) => k.toLowerCase()),
+      );
+      return json({ ok: true });
     }
 
     if (url.pathname.startsWith("/admin/topics/") && request.method === "DELETE") {
