@@ -1,8 +1,16 @@
 # atproto-feedgen
 
-A multi-topic [AT Protocol](https://atproto.com) feed generator for Bluesky, running entirely on
-Cloudflare Workers. First topic: options/futures trading talk. Add more topics via the admin API,
-no redeploy needed.
+An AT Protocol feed generator for Bluesky, running entirely on Cloudflare Workers. Topics are managed dynamically via REST API without redeploying; a persistent Durable Object streams [Jetstream](https://github.com/bluesky-social/jetstream) (Bluesky's JSON firehose) and matches posts against per-topic keyword lists in real time. First topic: options/futures trading talk.
+
+## Development Approach
+
+This project exemplifies disciplined software engineering: requirements and architecture were specified in detail *before* code was written, the application was developed test-driven (keyword matching and feed logic verified with unit tests alongside implementation), and all functionality was validated end-to-end before deployment. This approach demonstrates how structured practices—spec first, verify continuously, test as you build—compress what traditionally takes weeks of scaffolding and plumbing Cloudflare and AT Protocol primitives into focused, high-confidence delivery.
+
+**Highlights:**
+- Spec-first architecture defined and approved before implementation
+- Test-driven development (unit tests for the keyword-matching logic)
+- End-to-end verification before shipping
+- Multi-topic by design: new feeds are a config change, not a redeploy
 
 ## How it works
 

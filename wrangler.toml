@@ -13,12 +13,12 @@ class_name = "FirehoseListener"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["FirehoseListener"]
+new_sqlite_classes = ["FirehoseListener"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "atproto-feedgen-db"
-database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+database_id = "bc59b7f5-11b3-41c6-a9d9-1fa2ae9ea969"
 
 # Custom domain: after DNS is set up, add via `wrangler deployments domains add feeds.greymantlerisk.com`
 # Admin auth: `wrangler secret put ADMIN_TOKEN`
