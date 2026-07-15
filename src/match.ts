@@ -4,13 +4,23 @@ export interface TopicRule {
   excludeKeywords: string[];
 }
 
-// ponytail: plain substring match on lowercased text, no tokenizer/NLP — good enough
-// for a niche keyword feed; revisit if false positives from substring matches (e.g.
-// "IV" inside another word) become a real problem.
+// Real-world false positive: keyword "/es" (E-mini S&P futures ticker) matched every
+// URL with a Spanish-locale path segment ("ftwr.cloud/es/news/..."). Strip URLs before
+// matching, and require word boundaries so short tokens can't hide inside other text.
+const URL_RE = /https?:\/\/\S+/gi;
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function keywordRegex(keyword: string): RegExp {
+  return new RegExp(`(?<!\\w)${escapeRegex(keyword)}(?!\\w)`, "i");
+}
+
 export function matchesTopic(text: string, topic: TopicRule): boolean {
-  const lower = text.toLowerCase();
-  if (topic.excludeKeywords.some((kw) => lower.includes(kw))) return false;
-  return topic.keywords.some((kw) => lower.includes(kw));
+  const stripped = text.replace(URL_RE, " ");
+  if (topic.excludeKeywords.some((kw) => keywordRegex(kw).test(stripped))) return false;
+  return topic.keywords.some((kw) => keywordRegex(kw).test(stripped));
 }
 
 export function matchingTopics(text: string, topics: TopicRule[]): string[] {

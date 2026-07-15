@@ -25,3 +25,18 @@ test("matchingTopics returns ids of all matching topics", () => {
   const ids = matchingTopics("my cat loves options trading", [optionsTopic, cats]);
   assert.deepEqual(ids.sort(), ["cats", "options-futures"]);
 });
+
+test("does not match a keyword hiding inside a URL (e.g. /es locale path)", () => {
+  const text = "check the news https://ftwr.cloud/es/news/some-article about movies";
+  assert.equal(matchesTopic(text, optionsTopic), false);
+});
+
+test("matches a real /ES futures mention outside a URL", () => {
+  assert.equal(matchesTopic("shorting /ES into the close today", optionsTopic), true);
+});
+
+test("word boundary prevents substring match inside another word", () => {
+  const noBoundary = { id: "t", keywords: ["iv"], excludeKeywords: [] };
+  assert.equal(matchesTopic("my flight has finally arrived", noBoundary), false);
+  assert.equal(matchesTopic("checking IV before I sell premium", noBoundary), true);
+});
