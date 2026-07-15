@@ -4,8 +4,8 @@ compatibility_date = "2025-07-01"
 
 # Set to your real did:web host once the custom domain is live, e.g. "feeds.greymantlerisk.com"
 [vars]
-FEEDGEN_HOSTNAME = "atproto-feedgen.workers.dev"
-FEEDGEN_PUBLISHER_DID = "did:plc:REPLACE_WITH_PUBLISHER_DID"
+FEEDGEN_HOSTNAME = "atproto-feedgen.greymantlerisk.workers.dev"
+FEEDGEN_PUBLISHER_DID = "did:plc:o5kcx4p5nklwu6v2hyb2lfye"
 
 [[durable_objects.bindings]]
 name = "FIREHOSE_LISTENER"
