@@ -1,0 +1,23 @@
+{
+  "name": "atproto-feedgen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "publish-feed": "node --experimental-strip-types scripts/publish-feed.ts",
+    "migrate:local": "wrangler d1 migrations apply atproto-feedgen-db --local",
+    "migrate:remote": "wrangler d1 migrations apply atproto-feedgen-db --remote"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.20.0"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.0"
+  }
+}

@@ -1,0 +1,24 @@
+name = "atproto-feedgen"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+
+# Set to your real did:web host once the custom domain is live, e.g. "feeds.greymantlerisk.com"
+[vars]
+FEEDGEN_HOSTNAME = "atproto-feedgen.workers.dev"
+FEEDGEN_PUBLISHER_DID = "did:plc:REPLACE_WITH_PUBLISHER_DID"
+
+[[durable_objects.bindings]]
+name = "FIREHOSE_LISTENER"
+class_name = "FirehoseListener"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["FirehoseListener"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "atproto-feedgen-db"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+
+# Custom domain: after DNS is set up, add via `wrangler deployments domains add feeds.greymantlerisk.com`
+# Admin auth: `wrangler secret put ADMIN_TOKEN`
